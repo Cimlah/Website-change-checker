@@ -73,16 +73,23 @@ function checkArguments() {
     ! [[ $behaviour =~ ^((B|b)rowser|(S|s)creen|(F|f)ile)$ ]] && validity["B"]=false && echo "Wrong behaviour chosen. Only 'browser', 'screen' and 'file' are supported"
  
     if [[ -f "$websites" ]]; then
-        websites_content=$(cat "$websites")
+        # Read file content and store in array, split by newlines
+        websites_arr=()
+        while IFS= read -r line; do
+            websites_arr+=("$line")
+        done < "$websites"
     else
-        websites_content="$websites"
+        # Split by commas for direct input
+        old_ifs=$IFS
+        IFS=','
+        read -ra websites_arr <<< "$websites"
+        IFS=$old_ifs
     fi
 
-    old_ifs=$IFS
-    IFS=','
-    read -ra websites_arr <<< "$websites_content"
-    IFS=$old_ifs
+    # Validate each URL
     for idx in "${!websites_arr[@]}"; do
+        # Trim whitespace from the URL
+        websites_arr[$idx]=$(echo "${websites_arr[$idx]}" | xargs)
         if ! [[ "${websites_arr[$idx]}" =~ ^https?:// ]]; then
             echo "Wrong URL in $((idx+1)). element"
             validity["w"]=false
@@ -99,3 +106,6 @@ function checkArguments() {
     fi
 }
 checkArguments
+
+echo $are_arguments_valid
+echo "${websites_arr[@]}"
