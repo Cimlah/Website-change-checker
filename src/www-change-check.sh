@@ -1,10 +1,10 @@
 #! /bin/bash
 
-# - [ ] Website list as an argument or pass a file to argument
-# - [ ] Check interval
-# - [ ] Browser
-# - [ ] Stop checking after detecting first change
-# - [ ] Display info about change on screen or in save to file instead of showing the website in browser
+# - [X] Website list as an argument or pass a file to argument
+# - [X] Check interval
+# - [X] Browser
+# - [X] Stop checking after detecting first change
+# - [X] Display info about change on screen or in save to file instead of showing the website in browser
 # - [ ] Help page
 
 function helpPage() {
@@ -13,7 +13,7 @@ function helpPage() {
 
 websites=
 check_interval=600
-browser=
+browser="Safari"
 first_change_stop=false
 behaviour="browser"
 
@@ -34,7 +34,9 @@ while [ "$1" != "" ]; do
         ;;
     -b | --browser)
         shift
-        browser=$1
+        first_char=$(echo "${1:0:1}" | tr '[:lower:]' '[:upper:]')
+        rest_chars=$(echo "${1:1}" | tr '[:upper:]' '[:lower:]')
+        browser="${first_char}${rest_chars}"
         ;;
     -s | --first-change-stop)
         shift
@@ -42,7 +44,9 @@ while [ "$1" != "" ]; do
         ;;
     -B | --behaviour)
         shift
-        behaviour=$1
+        first_char=$(echo "${1:0:1}" | tr '[:lower:]' '[:upper:]')
+        rest_chars=$(echo "${1:1}" | tr '[:upper:]' '[:lower:]')
+        behaviour="${first_char}${rest_chars}"
         ;;
     *)
         echo "Error"
@@ -107,5 +111,55 @@ function checkArguments() {
 }
 checkArguments
 
-echo $are_arguments_valid
-echo "${websites_arr[@]}"
+
+if [[ ! -d "./temp" ]]; then mkdir temp; fi
+for idx in "${!websites_arr[@]}"; do
+    curl -s "${websites_arr[$idx]}" > "./temp/${idx}-orig.html"
+done
+
+while true; do
+    for idx in "${!websites_arr[@]}"; do
+        if [[ -f "./temp/${idx}-new.html" ]]; then
+            rm ./temp/"${idx}"-orig.html && \
+            mv ./temp/"${idx}"-new.html ./temp/"${idx}"-orig.html
+        fi
+    done
+
+    changed_websites=()
+    for idx in "${!websites_arr[@]}"; do
+        curl -s "${websites_arr[$idx]}" > "./temp/${idx}-new.html"
+        difference=$(diff ./temp/"${idx}"-new.html ./temp/"${idx}"-orig.html)
+        if [[ ${#difference} -gt 0 ]]; then
+            changed_websites+=("${websites_arr[$idx]}")
+        fi
+    done
+
+    case $behaviour in
+    Browser)
+        for idx in "${!changed_websites[@]}"; do
+            case $browser in
+            Chrome) # Need to change "Chrome" to "Google Chrome"
+                open -a Google\ Chrome "${changed_websites[$idx]}"
+                ;;
+            *)
+                open -a "$browser" "${changed_websites[$idx]}"
+                ;;
+            esac
+        done
+        ;;
+    Screen)
+        for idx in "${!changed_websites[@]}"; do
+            echo "$(date) - ${changed_websites[idx]} changed!"
+        done
+        ;;
+    *)
+        for idx in "${!changed_websites[@]}"; do
+            echo "$(date) - ${changed_websites[idx]} changed!" >> ./log.txt
+        done
+        ;;
+    esac
+
+    if [[ $first_change_stop = true && ${#changed_websites[@]} -gt 0 ]]; then exit 0; fi
+
+    sleep "$check_interval"
+done
