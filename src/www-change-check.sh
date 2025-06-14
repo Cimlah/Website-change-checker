@@ -5,10 +5,24 @@
 # - [X] Browser
 # - [X] Stop checking after detecting first change
 # - [X] Display info about change on screen or in save to file instead of showing the website in browser
-# - [ ] Help page
+# - [X] Help page
 
 function helpPage() {
-    echo "Help page"
+    echo "Website Change Checker"
+    echo "----------------------"
+    echo "A tool to monitor websites for changes and act accordingly."
+    echo
+    echo "Usage: $(basename "$0") [OPTIONS]"
+    echo
+    echo "Options:"
+    echo "  -w, --websites URLS        List of URLs separated by commas or path to a file with URLs (one per line)"
+    echo "  -c, --check-interval SEC   How often to check for changes in seconds (default: 600)"
+    echo "  -b, --browser BROWSER      Browser to open websites in (Safari, Chrome, Firefox) (default: Safari)"
+    echo "  -s, --first-change-stop    Stop checking after first change is detected"
+    echo "  -B, --behaviour ACTION     What to do when change is detected:"
+    echo "                             - Browser: open website in browser"
+    echo "                             - Screen: display info on screen"
+    echo "                             - File: save info to log.txt (default: browser)"
 }
 
 websites=
@@ -49,7 +63,7 @@ while [ "$1" != "" ]; do
         behaviour="${first_char}${rest_chars}"
         ;;
     *)
-        echo "Error"
+        helpPage
         exit 1
         ;;
     esac
@@ -106,6 +120,7 @@ function checkArguments() {
         fi
     done
     if [[ $are_arguments_valid == false ]]; then
+        helpPage
         exit 1
     fi
 }
